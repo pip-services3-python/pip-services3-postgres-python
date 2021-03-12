@@ -1,0 +1,11 @@
+iso8601
+PyYAML
+pystache
+pytest
+pytz
+psycopg2
+# psycopg2-binary
+
+pip_services3_commons
+pip_services3_components
+pip_services3_data
