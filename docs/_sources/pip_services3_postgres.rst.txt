@@ -1,0 +1,20 @@
+pip\_services3\_postgres package
+================================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pip_services3_postgres.build
+   pip_services3_postgres.connect
+   pip_services3_postgres.persistence
+
+Module contents
+---------------
+
+.. automodule:: pip_services3_postgres
+   :members:
+   :undoc-members:
+   :show-inheritance:

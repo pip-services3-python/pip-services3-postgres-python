@@ -1,0 +1,7 @@
+pip\_services3\_postgres.persistence.PostgresPersistence module
+===============================================================
+
+.. automodule:: pip_services3_postgres.persistence.PostgresPersistence
+   :members:
+   :undoc-members:
+   :show-inheritance:

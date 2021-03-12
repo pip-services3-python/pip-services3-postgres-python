@@ -1,0 +1,18 @@
+pip\_services3\_postgres.connect package
+========================================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 4
+
+   pip_services3_postgres.connect.PostgresConnectionResolver
+
+Module contents
+---------------
+
+.. automodule:: pip_services3_postgres.connect
+   :members:
+   :undoc-members:
+   :show-inheritance:

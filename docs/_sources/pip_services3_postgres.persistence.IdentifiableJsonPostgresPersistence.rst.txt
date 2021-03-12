@@ -1,0 +1,7 @@
+pip\_services3\_postgres.persistence.IdentifiableJsonPostgresPersistence module
+===============================================================================
+
+.. automodule:: pip_services3_postgres.persistence.IdentifiableJsonPostgresPersistence
+   :members:
+   :undoc-members:
+   :show-inheritance:

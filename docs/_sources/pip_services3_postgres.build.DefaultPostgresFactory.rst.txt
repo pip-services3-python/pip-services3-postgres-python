@@ -1,0 +1,7 @@
+pip\_services3\_postgres.build.DefaultPostgresFactory module
+============================================================
+
+.. automodule:: pip_services3_postgres.build.DefaultPostgresFactory
+   :members:
+   :undoc-members:
+   :show-inheritance:
