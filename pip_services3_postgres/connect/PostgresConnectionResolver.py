@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-from typing import List
+from typing import List, Optional, Any
 
-from pip_services3_commons.config import IConfigurable
+from pip_services3_commons.config import IConfigurable, ConfigParams
 from pip_services3_commons.errors import ConfigException
-from pip_services3_commons.refer import IReferenceable
+from pip_services3_commons.refer import IReferenceable, IReferences
 from pip_services3_components.auth import CredentialResolver, CredentialParams
 from pip_services3_components.connect import ConnectionResolver, ConnectionParams
 
@@ -34,11 +34,11 @@ class PostgresConnectionResolver(IReferenceable, IConfigurable):
 
     def __init__(self):
         # The connections resolver.
-        self._connection_resolver = ConnectionResolver()
+        self._connection_resolver: ConnectionResolver = ConnectionResolver()
         # The credentials resolver.
-        self._credential_resolver = CredentialResolver()
+        self._credential_resolver: CredentialResolver = CredentialResolver()
 
-    def configure(self, config):
+    def configure(self, config: ConfigParams):
         """
         Configures component by passing configuration parameters.
 
@@ -47,7 +47,7 @@ class PostgresConnectionResolver(IReferenceable, IConfigurable):
         self._connection_resolver.configure(config)
         self._credential_resolver.configure(config)
 
-    def set_references(self, references):
+    def set_references(self, references: IReferences):
         """
         Sets references to dependent components.
 
@@ -56,10 +56,10 @@ class PostgresConnectionResolver(IReferenceable, IConfigurable):
         self._connection_resolver.set_references(references)
         self._credential_resolver.set_references(references)
 
-    def __validate_connection(self, correlation_id, connection: ConnectionParams):
+    def __validate_connection(self, correlation_id: Optional[str], connection: ConnectionParams):
         uri = connection.get_uri()
         if uri is not None:
-            return None
+            return
 
         host = connection.get_host()
         if host is None:
@@ -73,25 +73,21 @@ class PostgresConnectionResolver(IReferenceable, IConfigurable):
         if database is None:
             raise ConfigException(correlation_id, "NO_DATABASE", "Connection database is not set")
 
-        return None
-
-    def __validate_connections(self, correlation_id, connections: List[ConnectionParams]):
+    def __validate_connections(self, correlation_id: Optional[str], connections: List[ConnectionParams]):
         if connections is None or len(connections) == 0:
             raise ConfigException(correlation_id, "NO_CONNECTION", "Database connection is not set")
 
         for connection in connections:
             self.__validate_connection(correlation_id, connection)
 
-        return None
-
-    def __compose_config(self, connections: List[ConnectionParams], credential: CredentialParams):
+    def __compose_config(self, connections: List[ConnectionParams], credential: CredentialParams) -> Any:
         config = {}
 
         # Define connection part
         for connection in connections:
-            # uri = connection.get_uri()
-            # if uri:
-            #     config['connection_string'] = uri
+            uri = connection.get_uri()
+            if uri:
+                config['connection_string'] = uri
 
             host = connection.get_host()
             if host:
@@ -117,7 +113,7 @@ class PostgresConnectionResolver(IReferenceable, IConfigurable):
 
         return config
 
-    def resolve(self, correlation_id):
+    def resolve(self, correlation_id: Optional[str]) -> Any:
         """
         Resolves PostgreSQL config from connection and credential parameters.
 

@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import random
+from typing import List, Any, Optional, TypeVar
 
 from pip_services3_commons.config import IConfigurable, ConfigParams
-from pip_services3_commons.convert import LongConverter
+from pip_services3_commons.convert import LongConverter, JsonConverter, TypeCode
 from pip_services3_commons.data import PagingParams, DataPage
 from pip_services3_commons.errors import InvalidStateException, ConnectionException
 from pip_services3_commons.refer import IReferenceable, IUnreferenceable, IReferences, DependencyResolver
@@ -11,8 +12,9 @@ from pip_services3_commons.run import IOpenable, ICleanable
 from pip_services3_components.log import CompositeLogger
 from psycopg2 import ProgrammingError
 
-from pip_services3_postgres.persistence.PostgresConnection import PostgresConnection
+from pip_services3_postgres.connect.PostgresConnection import PostgresConnection
 
+T = TypeVar('T')  # Declare type variable
 
 class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenable, ICleanable):
     """
@@ -76,7 +78,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
     """
 
-    _default_config = ConfigParams.from_tuples(
+    __default_config = ConfigParams.from_tuples(
         "collection", None,
         "dependencies.connection", "*:connection:postgres:*:1.0",
 
@@ -91,7 +93,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         "options.debug", True
     )
 
-    def __init__(self, table_name):
+    def __init__(self, table_name: str = None):
         """
         Creates a new instance of the persistence component.
 
@@ -104,32 +106,32 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         self.__references: IReferences = None
         self.__opened: bool = None
         self.__local_connection: bool = None
-        self.__schema_statements = []
+        self.__schema_statements: List[str] = []
 
         # The dependency resolver.
-        self._dependency_resolver = DependencyResolver(PostgresPersistence._default_config)
+        self._dependency_resolver: DependencyResolver = DependencyResolver(PostgresPersistence.__default_config)
 
         # The logger.
-        self._logger = CompositeLogger()
+        self._logger: CompositeLogger = CompositeLogger()
 
         # The PostgreSQL connection component.
         self._connection: PostgresConnection = None
 
         # The PostgreSQL connection pool object.
-        self._client = None
+        self._client: Any = None
 
         # The PostgreSQL database name.
-        self._database_name = None
+        self._database_name: str = None
 
         self._max_page_size = 100
 
-    def configure(self, config):
+    def configure(self, config: ConfigParams):
         """
         Configures component by passing configuration parameters.
 
         :param config: configuration parameters to be set.
         """
-        config = config.set_defaults(PostgresPersistence._default_config)
+        config = config.set_defaults(PostgresPersistence.__default_config)
         self.__config = config
 
         self._dependency_resolver.configure(config)
@@ -139,7 +141,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         self._table_name = config.get_as_string_with_default('collection', self._table_name)
         self._table_name = config.get_as_string_with_default('table', self._table_name)
 
-    def set_references(self, references):
+    def set_references(self, references: IReferences):
         """
         Sets references to dependent components.
 
@@ -164,7 +166,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         """
         self._connection = None
 
-    def __create_connection(self):
+    def __create_connection(self) -> PostgresConnection:
         connection = PostgresConnection()
 
         if self.__config:
@@ -175,7 +177,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return connection
 
-    def _ensure_index(self, name, keys, options=None):
+    def _ensure_index(self, name: str, keys: Any, options: Any = None):
         """
         Adds index definition to create it on opening
 
@@ -208,7 +210,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         self._ensure_schema(builder)
 
-    def _auto_create_objects(self, schema_statement):
+    def _auto_create_objects(self, schema_statement: str):
         """
         Adds a statement to schema definition.
         This is a deprecated method. Use ensureSchema instead.
@@ -217,7 +219,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         """
         self._ensure_schema(schema_statement)
 
-    def _ensure_schema(self, schema_statement):
+    def _ensure_schema(self, schema_statement: str):
         """
         Adds a statement to schema definition
 
@@ -232,10 +234,14 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         self.__schema_statements = []
 
     def _define_schema(self):
+        """
+        Defines database schema via auto create objects or convenience methods.
+        :return:
+        """
         # Todo: override in child classes
         pass
 
-    def _convert_to_public(self, value):
+    def _convert_to_public(self, value: Any) -> Any:
         """
         Converts object value from internal to public format.
 
@@ -244,16 +250,23 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         """
         return value
 
-    def _convert_from_public(self, value):
+    def _convert_from_public(self, value: Any) -> Any:
         """
         Convert object value from public to internal format.
 
         :param value: an object in public format to convert.
         :return: converted object in internal format.
         """
+
         return value
 
-    def _quote_identifier(self, value):
+    def _quote_identifier(self, value: str) -> Optional[str]:
+        """
+        TODO add ddescription
+
+        :param value:
+        :return:
+        """
 
         if value is None or value == '':
             return value
@@ -263,7 +276,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return '"' + value + '"'
 
-    def is_opened(self):
+    def is_open(self) -> bool:
         """
         Checks if the component is opened.
 
@@ -271,7 +284,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         """
         return self.__opened
 
-    def open(self, correlation_id):
+    def open(self, correlation_id: Optional[str]):
         """
         Opens the component.
 
@@ -291,7 +304,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         if self._connection is None:
             raise InvalidStateException(correlation_id, 'NO_CONNECTION', 'PostgreSQL connection is missing')
 
-        if not self._connection.is_opened():
+        if not self._connection.is_open():
             self.__opened = False
             raise ConnectionException(correlation_id, "CONNECT_FAILED", "PostgreSQL connection is not opened")
 
@@ -315,7 +328,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         except Exception as err:
             raise ConnectionException(correlation_id, "CONNECT_FAILED", "Connection to postgres failed").with_cause(err)
 
-    def close(self, correlation_id):
+    def close(self, correlation_id: Optional[str]):
         """
         Closes component and frees used resources.
 
@@ -354,7 +367,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
     #     self._client.putconn(conn)
     #     return response, cursor
 
-    def __query(self, query, params=None):
+    def __query(self, query: str, params: List[str] = None) -> dict:
         result = {'rowcount': None,
                   'items': [],
                   'statusmessage': None
@@ -385,7 +398,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         self._client.putconn(conn)
         return result
 
-    def clear(self, correlation_id):
+    def clear(self, correlation_id: Optional[str]):
         """
         Clears component state.
 
@@ -411,7 +424,12 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         except Exception as err:
             raise ConnectionException(correlation_id, "CONNECT_FAILED", "Connection to postgres failed").with_cause(err)
 
-    def _create_schema(self, correlation_id):
+    def _create_schema(self, correlation_id: Optional[str]):
+        """
+        TODO add description
+        :param correlation_id:
+        :return:
+        """
         if self.__schema_statements is None or len(self.__schema_statements) == 0:
             return None
 
@@ -434,7 +452,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         except Exception as err:
             self._logger.error(correlation_id, err, 'Failed to autocreate database object')
 
-    def _generate_columns(self, values):
+    def _generate_columns(self, values: Any) -> str:
         """
         Generates a list of column names to use in SQL statements like: "column1,column2,column3"
 
@@ -451,11 +469,11 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return result
 
-    def _generate_parameters(self, values):
+    def _generate_parameters(self, values: Any) -> str:
         """
         Generates a list of value parameters to use in SQL statements like: "%s,%s,%s"
 
-        :param values:
+        :param values: an array with values or a key-value map
         :return: a generated list of value parameters
         """
         values = values if not isinstance(values, dict) else values.keys()
@@ -468,7 +486,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return result
 
-    def _generate_set_parameters(self, values):
+    def _generate_set_parameters(self, values: Any) -> str:
         """
         Generates a list of column sets to use in UPDATE statements like: column1=%s,column2=%s
 
@@ -485,7 +503,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return result
 
-    def _generate_values(self, values):
+    def _generate_values(self, values: Any) -> List[Any]:
         """
         Generates a list of column parameters
 
@@ -494,7 +512,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         """
         return list(values.values())
 
-    def get_page_by_filter(self, correlation_id, filter, paging, sort, select):
+    def get_page_by_filter(self, correlation_id: Optional[str], filter: Any, paging: PagingParams,
+                           sort: Any, select: Any) -> DataPage:
         """
         Gets a page of data items retrieved by a given filter and sorted according to sort parameters.
         This method shall be called by a public getPageByFilter method from child class that
@@ -550,7 +569,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         else:
             return DataPage(items)
 
-    def get_count_by_filter(self, correlation_id, filter):
+    def get_count_by_filter(self, correlation_id: Optional[str], filter: Any) -> int:
         """
         Gets a number of data items retrieved by a given filter.
         This method shall be called by a public getCountByFilter method from child class that
@@ -575,7 +594,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return count
 
-    def get_list_by_filter(self, correlation_id, filter, sort, select):
+    def get_list_by_filter(self, correlation_id: Optional[str], filter: Any, sort: Any, select: Any) -> List[T]:
         """
         Gets a list of data items retrieved by a given filter and sorted according to sort parameters.
 
@@ -607,7 +626,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return items
 
-    def get_one_random(self, correlation_id, filter):
+    def get_one_random(self, correlation_id: Optional[str], filter: Any) -> T:
         """
         Gets a random item from items that match to a given filter.
         This method shall be called by a public getOneRandom method from child class that
@@ -646,7 +665,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return item
 
-    def create(self, correlation_id, item):
+    def create(self, correlation_id: Optional[str], item: T) -> T:
         """
         Creates a data item.
 
@@ -673,9 +692,12 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return new_item
 
-    def delete_by_filter(self, correlation_id, filter):
+    def delete_by_filter(self, correlation_id: Optional[str], filter: Any):
         """
         Deletes data items that match to a given filter.
+
+        This method shall be called by a public delete_by_filter method from child class that receives FilterParams
+        and converts them into a filter function.
 
         :param correlation_id: (optional) transaction id to trace execution through call chain.
         :param filter: (optional) a filter JSON object.

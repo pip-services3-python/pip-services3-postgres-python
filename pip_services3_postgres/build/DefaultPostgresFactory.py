@@ -3,7 +3,7 @@
 from pip_services3_commons.refer import Descriptor
 from pip_services3_components.build import Factory
 
-from pip_services3_postgres.persistence.PostgresConnection import PostgresConnection
+from pip_services3_postgres.connect.PostgresConnection import PostgresConnection
 
 
 class DefaultPostgresFactory(Factory):
@@ -13,12 +13,11 @@ class DefaultPostgresFactory(Factory):
     See: :class:`PostgresConnection <pip_services3_postgres.persistence.PostgresConnection.PostgresConnection>`,
     :class:`Factory <pip_services3_components.build.Factory.Factory>`
     """
-    descriptor = Descriptor("pip-services", "factory", "postgres", "default", "1.0")
-    postgres_connection_descriptor = Descriptor("pip-services", "connection", "postgres", "*", "1.0")
+    PostgresConnectionDescriptor = Descriptor("pip-services", "connection", "postgres", "*", "1.0")
 
     def __init__(self):
         """
         Create a new instance of the factory.
         """
         super(DefaultPostgresFactory, self).__init__()
-        self.register_as_type(DefaultPostgresFactory.postgres_connection_descriptor, PostgresConnection)
+        self.register_as_type(DefaultPostgresFactory.PostgresConnectionDescriptor, PostgresConnection)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+from typing import Any, List, Optional
 
 from pip_services3_commons.data import AnyValueMap
 
@@ -81,7 +82,7 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
         # ...
     """
 
-    def __init__(self, table_name):
+    def __init__(self, table_name: str = None):
         """
         Creates a new instance of the persistence component.
 
@@ -89,7 +90,7 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
         """
         super(IdentifiableJsonPostgresPersistence, self).__init__(table_name)
 
-    def _ensure_table(self, id_type='TEXT', data_type='JSONB'):
+    def _ensure_table(self, id_type: str = 'TEXT', data_type: str = 'JSONB'):
         """
         Adds DML statement to automatically create JSON(B) table
 
@@ -101,7 +102,7 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
 
         self._ensure_schema(query)
 
-    def _convert_to_public(self, value):
+    def _convert_to_public(self, value: Any) -> Any:
         """
         Converts object value from internal to public format.
 
@@ -112,7 +113,7 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
             return
         return value['data']
 
-    def _convert_from_public(self, value):
+    def _convert_from_public(self, value: Any) -> Any:
         """
         Convert object value from public to internal format.
 
@@ -129,7 +130,7 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
 
         return result
 
-    def _generate_values(self, values):
+    def _generate_values(self, values: dict) -> List[str]:
         """
         Generates a list of column parameters
 
@@ -144,7 +145,7 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
                 result.append(val)
         return result
 
-    def update_partially(self, correlation_id, id, data: AnyValueMap):
+    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> T:
         """
         Updates only few selected fields in a data item.
 

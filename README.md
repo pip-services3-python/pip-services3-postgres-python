@@ -27,15 +27,11 @@ As an example, lets create persistence for the following data object.
 ```python
 from pip_services3_commons.data import IIdentifiable
 
-class MyObject(IIdentifiable, dict):
+class MyObject(IIdentifiable):
     def __init__(self, id=None, key=None, value=None):
-        super(MyObject, self).__init__()
-
-        self.id = id
-        self.key = key
-        self.value = value
-
-        self.update(self.__dict__)
+        self['id'] = id
+        self['key'] = key
+        self['content'] = content
 ```
 
 The persistence component shall implement the following interface with a basic set of CRUD operations.
@@ -51,16 +47,16 @@ class IMyPersistence(ABC):
                            paging: Union[PagingParams, None]) -> DataPage:
         raise NotImplemented()
 
-    def get_one_by_id(self, correlation_id: Union[str, None], id: str) -> dict:
+    def get_one_by_id(self, correlation_id: Union[str, None], id: str) -> T:
         raise NotImplemented()
 
-    def get_one_by_key(self, correlation_id: Union[str, None], key: List[str]) -> dict:
+    def get_one_by_key(self, correlation_id: Union[str, None], key: List[str]) -> T:
         raise NotImplemented()
 
-    def create(self, correlation_id: Union[str, None], item: MyObject) -> dict:
+    def create(self, correlation_id: Union[str, None], item: T) -> T:
         raise NotImplemented()
 
-    def update(self, correlation_id: Union[str, None], item: MyObject) -> dict:
+    def update(self, correlation_id: Union[str, None], item: T) -> T:
         raise NotImplemented()
 
     def delete_by_id(self, correlation_id: Union[str, None], id: str):

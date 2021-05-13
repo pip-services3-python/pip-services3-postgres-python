@@ -5,7 +5,7 @@ import os
 from pip_services3_commons.config import ConfigParams
 from pip_services3_commons.refer import References, Descriptor
 
-from pip_services3_postgres.persistence.PostgresConnection import PostgresConnection
+from pip_services3_postgres.connect.PostgresConnection import PostgresConnection
 from test.fixtures.DummyPersistenceFixture import DummyPersistenceFixture
 
 from test.persistence.DummyPostgresPersistence import DummyPostgresPersistence
