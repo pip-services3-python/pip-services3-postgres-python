@@ -145,7 +145,7 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
                 result.append(val)
         return result
 
-    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> T:
+    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> Optional[dict]:
         """
         Updates only few selected fields in a data item.
 

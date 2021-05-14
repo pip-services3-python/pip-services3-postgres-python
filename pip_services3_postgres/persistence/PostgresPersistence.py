@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import random
-from typing import List, Any, Optional, TypeVar
+from typing import List, Any, Optional
 
 from pip_services3_commons.config import IConfigurable, ConfigParams
-from pip_services3_commons.convert import LongConverter, JsonConverter, TypeCode
+from pip_services3_commons.convert import LongConverter
 from pip_services3_commons.data import PagingParams, DataPage
 from pip_services3_commons.errors import InvalidStateException, ConnectionException
 from pip_services3_commons.refer import IReferenceable, IUnreferenceable, IReferences, DependencyResolver
@@ -14,7 +14,6 @@ from psycopg2 import ProgrammingError
 
 from pip_services3_postgres.connect.PostgresConnection import PostgresConnection
 
-T = TypeVar('T')  # Declare type variable
 
 class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpenable, ICleanable):
     """
@@ -479,7 +478,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         values = values if not isinstance(values, dict) else values.keys()
 
         result = ''
-        for val in values:
+        for _ in values:
             if result != '':
                 result += ','
             result += '%s'  # "$" + index;
@@ -594,7 +593,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return count
 
-    def get_list_by_filter(self, correlation_id: Optional[str], filter: Any, sort: Any, select: Any) -> List[T]:
+    def get_list_by_filter(self, correlation_id: Optional[str], filter: Any, sort: Any, select: Any) -> List[Any]:
         """
         Gets a list of data items retrieved by a given filter and sorted according to sort parameters.
 
@@ -626,7 +625,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return items
 
-    def get_one_random(self, correlation_id: Optional[str], filter: Any) -> T:
+    def get_one_random(self, correlation_id: Optional[str], filter: Any) -> dict:
         """
         Gets a random item from items that match to a given filter.
         This method shall be called by a public getOneRandom method from child class that
@@ -665,7 +664,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return item
 
-    def create(self, correlation_id: Optional[str], item: T) -> T:
+    def create(self, correlation_id: Optional[str], item: Any) -> Optional[dict]:
         """
         Creates a data item.
 

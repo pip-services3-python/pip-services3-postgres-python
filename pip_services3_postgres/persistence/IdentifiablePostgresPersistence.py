@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 from copy import deepcopy
-from typing import Any, List, Optional, TypeVar
+from typing import Any, List, Optional
 
 from pip_services3_commons.data import IdGenerator, AnyValueMap
 
 from pip_services3_postgres.persistence.PostgresPersistence import PostgresPersistence
-
-T = TypeVar('T')  # Declare type variable
 
 
 class IdentifiablePostgresPersistence(PostgresPersistence):
@@ -103,7 +101,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         """
         return self._convert_from_public(value)
 
-    def get_list_by_ids(self, correlation_id: Optional[str], ids: List[Any]) -> List[T]:
+    def get_list_by_ids(self, correlation_id: Optional[str], ids: List[Any]) -> List[Any]:
         """
         Gets a list of data items retrieved by given unique ids.
 
@@ -122,7 +120,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
 
         return items
 
-    def get_one_by_id(self, correlation_id: Optional[str], id: Any) -> T:
+    def get_one_by_id(self, correlation_id: Optional[str], id: Any) -> dict:
         """
         Gets a data item by its unique id.
 
@@ -143,7 +141,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
 
         return self._convert_to_public(item)
 
-    def create(self, correlation_id: Optional[str], item: T) -> T:
+    def create(self, correlation_id: Optional[str], item: Any) -> Optional[dict]:
         """
         Creates a data item.
 
@@ -162,7 +160,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
 
         return super().create(correlation_id, new_item)
 
-    def set(self, correlation_id: Optional[str], item: T) -> T:
+    def set(self, correlation_id: Optional[str], item: Any) -> Optional[dict]:
         """
         Sets a data item. If the data item exists it updates it,
         otherwise it create a new data item.
@@ -199,7 +197,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
 
         return new_item
 
-    def update(self, correlation_id: Optional[str], item: T) -> T:
+    def update(self, correlation_id: Optional[str], item: Any) -> Optional[dict]:
         """
         Updates a data item.
 
@@ -207,10 +205,8 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         :param item: an item to be updated.
         :return: updated item
         """
-        if item is None or item['id'] is None:
+        if item is None:
             return
-
-        self._public_type = item.__class__
 
         row = self._convert_from_public(item)
         params = self._generate_set_parameters(row)
@@ -228,7 +224,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
 
         return new_item
 
-    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> T:
+    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> Optional[dict]:
         """
         Updates only few selected fields in a data item.
 
@@ -256,7 +252,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
 
         return new_item
 
-    def delete_by_id(self, correlation_id: Optional[str], id: Any) -> T:
+    def delete_by_id(self, correlation_id: Optional[str], id: Any) -> dict:
         """
         Deleted a data item by it's unique id.
 

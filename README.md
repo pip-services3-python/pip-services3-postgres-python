@@ -25,9 +25,8 @@ pip install pip-services3-postgres
 As an example, lets create persistence for the following data object.
 
 ```python
-from pip_services3_commons.data import IIdentifiable
 
-class MyObject(IIdentifiable):
+class MyObject(dict):
     def __init__(self, id=None, key=None, value=None):
         self['id'] = id
         self['key'] = key
@@ -47,16 +46,16 @@ class IMyPersistence(ABC):
                            paging: Union[PagingParams, None]) -> DataPage:
         raise NotImplemented()
 
-    def get_one_by_id(self, correlation_id: Union[str, None], id: str) -> T:
+    def get_one_by_id(self, correlation_id: Union[str, None], id: str) -> dict:
         raise NotImplemented()
 
-    def get_one_by_key(self, correlation_id: Union[str, None], key: List[str]) -> T:
+    def get_one_by_key(self, correlation_id: Union[str, None], key: List[str]) -> dict:
         raise NotImplemented()
 
-    def create(self, correlation_id: Union[str, None], item: T) -> T:
+    def create(self, correlation_id: Union[str, None], item: Any) -> dict:
         raise NotImplemented()
 
-    def update(self, correlation_id: Union[str, None], item: T) -> T:
+    def update(self, correlation_id: Union[str, None], item: Any) -> dict:
         raise NotImplemented()
 
     def delete_by_id(self, correlation_id: Union[str, None], id: str):
