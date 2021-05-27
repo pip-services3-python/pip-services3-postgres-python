@@ -26,11 +26,11 @@ As an example, lets create persistence for the following data object.
 
 ```python
 
-class MyObject(dict):
-    def __init__(self, id=None, key=None, value=None):
-        self['id'] = id
-        self['key'] = key
-        self['content'] = content
+class MyObject(IStringIdentifiable):
+    def __init__(self, id=None, key=None, content=None):
+        self.id = id
+        self.key = key
+        self.content = content
 ```
 
 The persistence component shall implement the following interface with a basic set of CRUD operations.
@@ -46,16 +46,16 @@ class IMyPersistence(ABC):
                            paging: Union[PagingParams, None]) -> DataPage:
         raise NotImplemented()
 
-    def get_one_by_id(self, correlation_id: Union[str, None], id: str) -> dict:
+    def get_one_by_id(self, correlation_id: Union[str, None], id: str) -> MyObject:
         raise NotImplemented()
 
-    def get_one_by_key(self, correlation_id: Union[str, None], key: List[str]) -> dict:
+    def get_one_by_key(self, correlation_id: Union[str, None], key: List[str]) -> MyObject:
         raise NotImplemented()
 
-    def create(self, correlation_id: Union[str, None], item: Any) -> dict:
+    def create(self, correlation_id: Union[str, None], item: MyObject) -> MyObject:
         raise NotImplemented()
 
-    def update(self, correlation_id: Union[str, None], item: Any) -> dict:
+    def update(self, correlation_id: Union[str, None], item: MyObject) -> MyObject:
         raise NotImplemented()
 
     def delete_by_id(self, correlation_id: Union[str, None], id: str):

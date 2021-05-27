@@ -1,0 +1,7 @@
+pip\_services3\_postgres.connect.PostgresConnection module
+==========================================================
+
+.. automodule:: pip_services3_postgres.connect.PostgresConnection
+   :members:
+   :undoc-members:
+   :show-inheritance:

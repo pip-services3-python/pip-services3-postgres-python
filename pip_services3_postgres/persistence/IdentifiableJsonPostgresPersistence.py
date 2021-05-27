@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import json
-from typing import Any, List, Optional
+from typing import Any, List, Optional, TypeVar
 
 from pip_services3_commons.data import AnyValueMap
 
 from pip_services3_postgres.persistence.IdentifiablePostgresPersistence import IdentifiablePostgresPersistence
+
+T = TypeVar('T')  # Declare type variable
 
 
 class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
@@ -110,8 +112,11 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
         :return: converted object in public format.
         """
         if value is None:
-            return
-        return value['data']
+            return None
+        try:
+            return super()._convert_to_public(value['data'])
+        except KeyError:
+            return super()._convert_to_public(value)
 
     def _convert_from_public(self, value: Any) -> Any:
         """
@@ -121,13 +126,14 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
         :return: converted object in internal format.
         """
         if value is None:
-            return
+            return None
+
+        value = super()._convert_from_public(value)
 
         result = {
             'id': value['id'],
-            'data': value
+            'data': json.dumps(value)
         }
-
         return result
 
     def _generate_values(self, values: dict) -> List[str]:
@@ -145,7 +151,7 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
                 result.append(val)
         return result
 
-    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> Optional[dict]:
+    def update_partially(self, correlation_id: Optional[str], id: Any, data: AnyValueMap) -> Optional[T]:
         """
         Updates only few selected fields in a data item.
 

@@ -4,6 +4,7 @@
 
 ### Bug Fixes
 * fix private, protected method names
+* Fixed returned types for operations
 
 ### Features
 * Moved PostgresConnection to **connect** package

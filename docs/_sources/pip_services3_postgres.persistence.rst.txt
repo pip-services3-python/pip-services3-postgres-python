@@ -9,7 +9,6 @@ Submodules
 
    pip_services3_postgres.persistence.IdentifiableJsonPostgresPersistence
    pip_services3_postgres.persistence.IdentifiablePostgresPersistence
-   pip_services3_postgres.persistence.PostgresConnection
    pip_services3_postgres.persistence.PostgresPersistence
 
 Module contents
