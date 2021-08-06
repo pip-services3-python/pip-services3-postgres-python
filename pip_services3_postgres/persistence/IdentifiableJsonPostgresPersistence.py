@@ -26,7 +26,8 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
     accessing **self._collection** and **self._model** properties.
 
     ### Configuration parameters ###
-        - collection:                  (optional) Postgres collection name
+        - table:                      (optional) PostgreSQL table name
+        - schema:                     (optional) PostgreSQL schema name
         - connection(s):
             - discovery_key:             (optional) a key to retrieve the connection from :class:`IDiscovery <pip_services3_components.connect.IDiscovery.IDiscovery>`
             - host:                      host name or IP address
@@ -84,13 +85,14 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
         # ...
     """
 
-    def __init__(self, table_name: str = None):
+    def __init__(self, table_name: str = None, schema_name: str = None):
         """
         Creates a new instance of the persistence component.
 
-        :param table_name: (optional) a collection name.
+        :param table_name: (optional) a table name.
+        :param schema_name: (optional) a schema name.
         """
-        super(IdentifiableJsonPostgresPersistence, self).__init__(table_name)
+        super(IdentifiableJsonPostgresPersistence, self).__init__(table_name, schema_name)
 
     def _ensure_table(self, id_type: str = 'TEXT', data_type: str = 'JSONB'):
         """
@@ -99,9 +101,12 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
         :param id_type: type of the id column (default: TEXT)
         :param data_type: type of the data column (default: JSONB)
         """
+        if self._schema_name is not None:
+            query = "CREATE SCHEMA IF NOT EXISTS " + self._quote_identifier(self._schema_name)
+            self._ensure_schema(query)
+
         query = "CREATE TABLE IF NOT EXISTS " + self._quote_identifier(self._table_name) \
                 + " (\"id\" " + id_type + " PRIMARY KEY, \"data\" " + data_type + ")"
-
         self._ensure_schema(query)
 
     def _convert_to_public(self, value: Any) -> Any:
@@ -163,8 +168,7 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
         if data is None or id is None:
             return
 
-        query = "UPDATE " + self._quote_identifier(
-            self._table_name) + " SET \"data\"=\"data\"||%s WHERE \"id\"=%s RETURNING *"
+        query = "UPDATE " + self._quoted_table_name() + " SET \"data\"=\"data\"||%s WHERE \"id\"=%s RETURNING *"
 
         values = [json.dumps(data.get_as_object()), id]
 

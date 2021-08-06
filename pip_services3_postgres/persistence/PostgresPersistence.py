@@ -28,7 +28,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
     accessing **self._db** or **self._collection** properties.
 
     ### Configuration parameters ###
-        - collection:                  (optional) Postgres collection name
+        - table:                      (optional) PostgreSQL table name
+        - schema:                     (optional) PostgreSQL schema name
         - connection(s):
             - discovery_key:             (optional) a key to retrieve the connection from :class:`IDiscovery <pip_services3_components.connect.IDiscovery.IDiscovery>`
             - host:                      host name or IP address
@@ -81,7 +82,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
     """
 
     __default_config = ConfigParams.from_tuples(
-        "collection", None,
+        "table", None,
+        "schema", None,
         "dependencies.connection", "*:connection:postgres:*:1.0",
 
         # connections.*
@@ -95,14 +97,18 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         "options.debug", True
     )
 
-    def __init__(self, table_name: str = None):
+    def __init__(self, table_name: str = None, schema_name: str = None):
         """
         Creates a new instance of the persistence component.
 
         :param table_name: (optional) a table name.
+        :param schema_name: (optional) a schema name.
         """
         # The PostgreSQL table object.
         self._table_name = table_name
+
+        # The PostgreSQL schema object.
+        self._schema_name = schema_name
 
         self.__config: ConfigParams = None
         self.__references: IReferences = None
@@ -125,6 +131,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         # The PostgreSQL database name.
         self._database_name: str = None
 
+        # Maximum number of objects in data pages
         self._max_page_size = 100
 
     def configure(self, config: ConfigParams):
@@ -193,8 +200,11 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         if options.get('unique'):
             builder += " UNIQUE"
 
-        builder += " INDEX IF NOT EXISTS " + self._quote_identifier(name) + " ON " + self._quote_identifier(
-            self._table_name)
+        index_name = self._quote_identifier(name)
+        if self._schema_name is not None:
+            index_name = self._quote_identifier(self._schema_name) + '.' + index_name
+
+        builder += " INDEX IF NOT EXISTS " + index_name + " ON " + self._quoted_table_name()
 
         if options.get('type'):
             builder += " " + options['type']
@@ -283,6 +293,16 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         return '"' + value + '"'
 
+    def _quoted_table_name(self) -> Optional[str]:
+        if self._table_name is None:
+            return None
+
+        builder = self._quote_identifier(self._table_name)
+        if self._schema_name is not None:
+            builder += self._quote_identifier(self._schema_name) + '.' + builder
+
+        return builder
+
     def is_open(self) -> bool:
         """
         Checks if the component is opened.
@@ -331,7 +351,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
             self._logger.debug(correlation_id,
                                "Connected to postgres database %s, collection %s",
                                self._database_name,
-                               self._quote_identifier(self._table_name))
+                               self._table_name)
         except Exception as err:
             raise ConnectionException(correlation_id, "CONNECT_FAILED", "Connection to postgres failed").with_cause(err)
 
@@ -417,10 +437,10 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         if self._table_name is None:
             raise Exception('Table name is not defined')
 
-        query = "DELETE FROM " + self._quote_identifier(self._table_name)
+        query = "DELETE FROM " + self._quoted_table_name()
 
         try:
-            # self._client.query(query) # TODO
+            # self._client.query(query)
             conn = self._client.getconn()
             cursor = conn.cursor()
             cursor.execute(query)
@@ -441,6 +461,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
             return None
 
         # Check if table exist to determine weither to auto create objects
+        # Todo: Add support for schema
         query = "SELECT to_regclass('" + self._table_name + "')"
 
         result = self._client.query(query)
@@ -534,7 +555,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         :return: a data page or error
         """
         select = select if select and len(select) > 0 else '*'
-        query = "SELECT " + select + " FROM " + self._quote_identifier(self._table_name)
+        query = "SELECT " + select + " FROM " + self._quoted_table_name()
 
         # Adjust max item count based on configuration
         paging = paging or PagingParams()
@@ -563,7 +584,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         items = list(map(self._convert_to_public, items))
 
         if paging_enabled:
-            query = 'SELECT COUNT(*) AS count FROM ' + self._quote_identifier(self._table_name)
+            query = 'SELECT COUNT(*) AS count FROM ' + self._quoted_table_name()
             if filter is not None and filter != '':
                 query += " WHERE " + filter
 
@@ -586,7 +607,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         :param filter: (optional) a filter JSON object
         :return: a data page or error
         """
-        query = 'SELECT COUNT(*) AS count FROM ' + self._quote_identifier(self._table_name)
+        query = 'SELECT COUNT(*) AS count FROM ' + self._quoted_table_name()
 
         if filter and filter != '':
             query += " WHERE " + filter
@@ -616,7 +637,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         """
 
         select = select if len(select) > 0 else '*'
-        query = "SELECT " + select + " FROM " + self._quote_identifier(self._table_name)
+        query = "SELECT " + select + " FROM " + self._quoted_table_name()
 
         if filter and filter != '':
             query += " WHERE " + filter
@@ -643,13 +664,13 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         :param filter: (optional) a filter JSON object
         :return: a random item
         """
-        query = 'SELECT COUNT(*) AS count FROM ' + self._quote_identifier(self._table_name)
+        query = 'SELECT COUNT(*) AS count FROM ' + self._quoted_table_name()
         if filter and filter != '':
             query += " WHERE " + filter
 
         result = self._client.query(query)
 
-        query = "SELECT * FROM " + self._quote_identifier(self._table_name)
+        query = "SELECT * FROM " + self._quoted_table_name()
 
         if filter and filter != '':
             query += " WHERE " + filter
@@ -688,8 +709,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         params = self._generate_parameters(row)
         values = self._generate_values(row)
 
-        query = "INSERT INTO " + self._quote_identifier(
-            self._table_name) + " (" + columns + ") VALUES (" + params + ") RETURNING *"
+        query = "INSERT INTO " + self._quoted_table_name() + " (" + columns + ") VALUES (" + params + ") RETURNING *"
 
         result = self._client.query(query, values)
         self._logger.trace(correlation_id, "Created in %s with id = %s", self._table_name, row['id'])
@@ -710,7 +730,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         :param filter: (optional) a filter JSON object.
         :return: null for success
         """
-        query = "DELETE FROM " + self._quote_identifier(self._table_name)
+        query = "DELETE FROM " + self._quoted_table_name()
         if filter and filter != '':
             query += " WHERE " + filter
 

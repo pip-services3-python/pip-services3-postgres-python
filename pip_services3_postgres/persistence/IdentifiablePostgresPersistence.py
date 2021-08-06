@@ -24,7 +24,8 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
     accessing **self._collection** and **self._model** properties.
 
     ### Configuration parameters ###
-        - collection:                  (optional) Postgres collection name
+        - table:                      (optional) PostgreSQL table name
+        - schema:                     (optional) PostgreSQL schema name
         - connection(s):
             - discovery_key:             (optional) a key to retrieve the connection from :class:`IDiscovery <pip_services3_components.connect.IDiscovery.IDiscovery>`
             - host:                      host name or IP address
@@ -83,16 +84,17 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
 
     """
 
-    def __init__(self, table_name: str = None):
+    def __init__(self, table_name: str = None, schema_name: str = None):
         """
         Creates a new instance of the persistence component.
 
-        :param table_name: (optional) a collection name.
+        :param table_name: (optional) a table name.
+        :param schema_name: (optional) a schema name.
         """
-        super(IdentifiablePostgresPersistence, self).__init__(table_name)
+        super(IdentifiablePostgresPersistence, self).__init__(table_name, schema_name)
 
-        if table_name is None:
-            Exception("Table name could not be null")
+        # Flag to turn on automated string ID generation
+        self._auto_generate_id: bool = True
 
     def _convert_from_public_partial(self, value: Any) -> Any:
         """
@@ -112,7 +114,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         :return: data list
         """
         params = self._generate_parameters(ids)
-        query = "SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE \"id\" IN(" + params + ")"
+        query = "SELECT * FROM " + self._quoted_table_name() + " WHERE \"id\" IN(" + params + ")"
         result = self._client.query(query, ids)
         items = result['items']
 
@@ -130,7 +132,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         :param id: an id of data item to be retrieved.
         :return: data item
         """
-        query = "SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE \"id\"=%s"
+        query = "SELECT * FROM " + self._quoted_table_name() + " WHERE \"id\"=%s"
         params = [id]
 
         result = self._client.query(query, params)
@@ -156,7 +158,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
 
         # Assign unique id
         new_item = item
-        if new_item.id is None:
+        if new_item.id is None and self._auto_generate_id:
             new_item = deepcopy(new_item)
             new_item.id = item.id or IdGenerator.next_long()
 
@@ -175,7 +177,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
             return
 
         # Assign unique id
-        if item.get('id') is None:
+        if item.get('id') is None and self._auto_generate_id:
             item = deepcopy(item)
             item['id'] = item['id'] or IdGenerator.next_long()
 
@@ -186,7 +188,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         values = self._generate_values(row)
         values += deepcopy(values)
 
-        query = "INSERT INTO " + self._quote_identifier(self._table_name) + " (" + columns + ")" \
+        query = "INSERT INTO " + self._quoted_table_name() + " (" + columns + ")" \
                 + " VALUES (" + params + ")" \
                 + " ON CONFLICT (\"id\") DO UPDATE SET " + set_params + " RETURNING *"
 
@@ -215,7 +217,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         values = self._generate_values(row)
         values.append(row['id'])
 
-        query = "UPDATE " + self._quote_identifier(self._table_name) \
+        query = "UPDATE " + self._quoted_table_name() \
                 + " SET " + params + " WHERE \"id\"=%s RETURNING *"
 
         result = self._client.query(query, values)
@@ -244,7 +246,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         values = self._generate_values(row)
         values.append(id)
 
-        query = "UPDATE " + self._quote_identifier(self._table_name) \
+        query = "UPDATE " + self._quoted_table_name() \
                 + " SET " + params + " WHERE \"id\"=%s RETURNING *"
 
         result = self._client.query(query, values)
@@ -265,7 +267,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         """
         values = [id]
 
-        query = "DELETE FROM " + self._quote_identifier(self._table_name) + " WHERE \"id\"=%s RETURNING *"
+        query = "DELETE FROM " + self._quoted_table_name() + " WHERE \"id\"=%s RETURNING *"
 
         result = self._client.query(query, values)
 
@@ -283,7 +285,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         :param ids: ids of data items to be deleted.
         """
         params = self._generate_parameters(ids)
-        query = "DELETE FROM " + self._quote_identifier(self._table_name) + " WHERE \"id\" IN(" + params + ")"
+        query = "DELETE FROM " + self._quoted_table_name() + " WHERE \"id\" IN(" + params + ")"
 
         result = self._client.query(query, ids)
         count = result['rowcount'] if result['rowcount'] else 0

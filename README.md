@@ -97,7 +97,7 @@ class MyPostgresPersistence(IdentifablePostgresPersistence):
         return super().get_page_by_filter(correlation_id, self.__compose_filter(filter), paging, 'id', None)
 
     def get_one_by_key(self, correlation_id, key):
-        query = "SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE \"key\"=%s"
+        query = "SELECT * FROM " + self._quoted_table_name() + " WHERE \"key\"=%s"
         params = [key]
 
         result = self._request(query, params)
@@ -151,7 +151,7 @@ class MyPostgresPersistence(IdentifableJsonPostgresPersistence):
         return super().get_page_by_filter(correlation_id, self.__compose_filter(filter), paging, 'id', None)
 
     def get_one_by_key(self, correlation_id, key):
-        query = "SELECT * FROM " + self._quote_identifier(self._table_name) + " WHERE data->>'key'=%s"
+        query = "SELECT * FROM " + self._quoted_table_name() + " WHERE data->>'key'=%s"
         params = [key]
 
         result = self._request(query, params)
