@@ -336,8 +336,6 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
             raise ConnectionException(correlation_id, "CONNECT_FAILED", "PostgreSQL connection is not opened")
 
         self._client = self._connection.get_connection()
-        # add query method
-        self._client.query = self.__query
 
         self._database_name = self._connection.get_database_name()
 
@@ -377,7 +375,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
             self.__opened = False
             self._client = None
 
-    # def __query(self, query, params=None):
+    # def _request(self, query, params=None):
     #
     #     conn = self._client.getconn()
     #     cursor = conn.cursor()
@@ -394,7 +392,14 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
     #     self._client.putconn(conn)
     #     return response, cursor
 
-    def __query(self, query: str, params: List[str] = None) -> dict:
+    def _request(self, query: str, params: List[str] = None) -> dict:
+        """
+        Performs a request to the database.
+
+        :param query: string with sql query to database
+        :param params: optional list of query parameters
+        :return: result of the query
+        """
         result = {'rowcount': None,
                   'items': [],
                   'statusmessage': None
@@ -440,7 +445,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         query = "DELETE FROM " + self._quoted_table_name()
 
         try:
-            # self._client.query(query)
+            # self._request(query)
             conn = self._client.getconn()
             cursor = conn.cursor()
             cursor.execute(query)
@@ -464,7 +469,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         # Todo: Add support for schema
         query = "SELECT to_regclass('" + self._table_name + "')"
 
-        result = self._client.query(query)
+        result = self._request(query)
 
         # If table already exists then exit
         if result['items'] and len(result['items']) > 0 and result['items'][0]['to_regclass'] is not None:
@@ -476,7 +481,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         # Run all DML commands
         try:
             for dlm in self.__schema_statements:
-                self._client.query(dlm)
+                self._request(dlm)
         except Exception as err:
             self._logger.error(correlation_id, err, 'Failed to autocreate database object')
 
@@ -575,7 +580,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         query += " LIMIT " + str(take)
 
-        result = self._client.query(query)
+        result = self._request(query)
         items = result['items']
 
         if items is not None:
@@ -588,7 +593,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
             if filter is not None and filter != '':
                 query += " WHERE " + filter
 
-            result = self._client.query(query)
+            result = self._request(query)
 
             count = LongConverter.to_long(result['rows'][0]['count']) if result['rows'] and len(
                 result['rows']) == 1 else 0
@@ -612,7 +617,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         if filter and filter != '':
             query += " WHERE " + filter
 
-        result = self._client.query(query)
+        result = self._request(query)
 
         count = LongConverter.to_long(result['items'][0]['count']) if result['items'] and len(
             result['items']) == 1 else 0
@@ -645,7 +650,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         if sort:
             query += " ORDER BY " + sort
 
-        items = self._client.query(query)
+        items = self._request(query)
 
         if items is not None:
             self._logger.trace(correlation_id, "Retrieved %d from %s", len(items), self._table_name)
@@ -668,7 +673,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         if filter and filter != '':
             query += " WHERE " + filter
 
-        result = self._client.query(query)
+        result = self._request(query)
 
         query = "SELECT * FROM " + self._quoted_table_name()
 
@@ -679,7 +684,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         pos = random.randint(0, count - 1)
         query += f" OFFSET {pos} LIMIT 1"
 
-        result = self._client.query(query)
+        result = self._request(query)
 
         items = result['rows']
         item = items[0] if items is not None and len(items) > 0 else None
@@ -711,7 +716,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         query = "INSERT INTO " + self._quoted_table_name() + " (" + columns + ") VALUES (" + params + ") RETURNING *"
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
         self._logger.trace(correlation_id, "Created in %s with id = %s", self._table_name, row['id'])
 
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and result['items'][0] and len(
@@ -734,7 +739,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         if filter and filter != '':
             query += " WHERE " + filter
 
-        result = self._client.query(query)
+        result = self._request(query)
 
         count = result['rowcount'] if result['rowcount'] else 0
 

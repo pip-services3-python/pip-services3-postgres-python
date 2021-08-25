@@ -172,7 +172,7 @@ class IdentifiableJsonPostgresPersistence(IdentifiablePostgresPersistence):
 
         values = [json.dumps(data.get_as_object()), id]
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
 
         self._logger.trace(correlation_id, "Updated partially in %s with id = %s", self._table_name, id)
 

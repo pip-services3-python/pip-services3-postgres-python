@@ -115,7 +115,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         """
         params = self._generate_parameters(ids)
         query = "SELECT * FROM " + self._quoted_table_name() + " WHERE \"id\" IN(" + params + ")"
-        result = self._client.query(query, ids)
+        result = self._request(query, ids)
         items = result['items']
 
         if items is not None:
@@ -135,7 +135,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         query = "SELECT * FROM " + self._quoted_table_name() + " WHERE \"id\"=%s"
         params = [id]
 
-        result = self._client.query(query, params)
+        result = self._request(query, params)
         item = result['items'][0] or None if result['items'] and len(result['items']) else None
 
         if item is None:
@@ -192,7 +192,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
                 + " VALUES (" + params + ")" \
                 + " ON CONFLICT (\"id\") DO UPDATE SET " + set_params + " RETURNING *"
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
         self._logger.trace(correlation_id, "Set in %s with id = %s", self._quote_identifier(self._table_name),
                            item['id'])
 
@@ -220,7 +220,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         query = "UPDATE " + self._quoted_table_name() \
                 + " SET " + params + " WHERE \"id\"=%s RETURNING *"
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
 
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
             result['items']) == 1 else None
@@ -249,7 +249,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         query = "UPDATE " + self._quoted_table_name() \
                 + " SET " + params + " WHERE \"id\"=%s RETURNING *"
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
 
         self._logger.trace(correlation_id, "Updated partially in %s with id = %s", self._table_name, id)
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
@@ -269,7 +269,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
 
         query = "DELETE FROM " + self._quoted_table_name() + " WHERE \"id\"=%s RETURNING *"
 
-        result = self._client.query(query, values)
+        result = self._request(query, values)
 
         self._logger.trace(correlation_id, "Deleted from %s with id = %s", self._table_name, id)
         deleted_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
@@ -287,6 +287,6 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
         params = self._generate_parameters(ids)
         query = "DELETE FROM " + self._quoted_table_name() + " WHERE \"id\" IN(" + params + ")"
 
-        result = self._client.query(query, ids)
+        result = self._request(query, ids)
         count = result['rowcount'] if result['rowcount'] else 0
         self._logger.trace(correlation_id, "Deleted %d items from %s", count, self._table_name)
