@@ -23,7 +23,7 @@ from setuptools import find_packages
 
 setup(
     name='pip_services3_postgres',
-    version='3.2.1',
+    version='3.2.2',
     url='http://github.com/pip-services3-python/pip-services3-postgres-python',
     license='MIT',
     author='Conceptual Vision Consulting LLC',
@@ -38,7 +38,7 @@ setup(
     install_requires=[
         'iso8601', 
         'PyYAML', 
-        'psycopg2',
+        'psycopg2-binary',
         'pip_services3_commons',
         'pip_services3_components',
         'pip_services3_data'
