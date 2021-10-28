@@ -18,12 +18,12 @@ try:
 except:
     readme = __doc__
 
-from setuptools import setup
 from setuptools import find_packages
+from setuptools import setup
 
 setup(
     name='pip_services3_postgres',
-    version='3.2.2',
+    version='3.2.3',
     url='http://github.com/pip-services3-python/pip-services3-postgres-python',
     license='MIT',
     author='Conceptual Vision Consulting LLC',
@@ -36,12 +36,11 @@ setup(
     zip_safe=True,
     platforms='any',
     install_requires=[
-        'iso8601', 
-        'PyYAML', 
+
         'psycopg2-binary',
-        'pip_services3_commons',
-        'pip_services3_components',
-        'pip_services3_data'
+        'pip-services3-commons >= 3.3.9, < 4.0',
+        'pip-services3-components >= 3.5.0, < 4.0',
+        'pip_services3_data >= 3.2.3, < 4.0'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -52,5 +51,5 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.7',
         'Topic :: Software Development :: Libraries :: Python Modules'
-    ]    
+    ]
 )
