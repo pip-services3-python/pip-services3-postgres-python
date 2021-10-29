@@ -177,9 +177,9 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
             return
 
         # Assign unique id
-        if item.get('id') is None and self._auto_generate_id:
+        if item.id is None and self._auto_generate_id:
             item = deepcopy(item)
-            item['id'] = item['id'] or IdGenerator.next_long()
+            item.id = item.id or IdGenerator.next_long()
 
         row = self._convert_from_public(item)
         columns = self._generate_columns(row)
@@ -194,7 +194,7 @@ class IdentifiablePostgresPersistence(PostgresPersistence):
 
         result = self._request(query, values)
         self._logger.trace(correlation_id, "Set in %s with id = %s", self._quote_identifier(self._table_name),
-                           item['id'])
+                           item.id)
 
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and len(
             result['items']) == 1 else None
