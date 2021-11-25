@@ -11,9 +11,8 @@ from pip_services3_commons.refer import IReferenceable, IUnreferenceable, IRefer
 from pip_services3_commons.reflect import PropertyReflector
 from pip_services3_commons.run import IOpenable, ICleanable
 from pip_services3_components.log import CompositeLogger
-from psycopg2 import ProgrammingError
-
 from pip_services3_postgres.connect.PostgresConnection import PostgresConnection
+from psycopg2 import ProgrammingError
 
 T = TypeVar('T')  # Declare type variable
 
@@ -420,9 +419,12 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         except ProgrammingError:
             pass
 
+        try:
+            result['rowcount'] = int(cursor.statusmessage.split(' ')[-1])
+        except ValueError:
+            result['rowcount'] = cursor.rowcount
         # affected rows
-        result.update({'rowcount': cursor.rowcount,
-                       'statusmessage': cursor.statusmessage})
+        result['statusmessage'] = cursor.statusmessage
 
         conn.commit()
         cursor.close()
@@ -595,8 +597,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
             result = self._request(query)
 
-            count = LongConverter.to_long(result['rows'][0]['count']) if result['rows'] and len(
-                result['rows']) == 1 else 0
+            count = LongConverter.to_long(0 if len(result['items']) == 0 else result['items'][0].get('count', 0))
 
             return DataPage(items, count)
         else:
@@ -641,7 +642,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         :return: data list
         """
 
-        select = select if len(select) > 0 else '*'
+        select = select if select and len(select) > 0 else '*'
         query = "SELECT " + select + " FROM " + self._quoted_table_name()
 
         if filter and filter != '':
@@ -650,7 +651,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         if sort:
             query += " ORDER BY " + sort
 
-        items = self._request(query)
+        result = self._request(query)
+        items = result['items']
 
         if items is not None:
             self._logger.trace(correlation_id, "Retrieved %d from %s", len(items), self._table_name)
@@ -680,13 +682,15 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         if filter and filter != '':
             query += " WHERE " + filter
 
-        count = result['rows'].count if result['rows'] and len(result['rows']) == 1 else 0
-        pos = random.randint(0, count - 1)
+        count = 0 if len(result['items']) == 0 else result['items'][0].get('count', 0)
+        count = 0 if count == 0 else count - 1
+
+        pos = random.randint(0, count)
         query += f" OFFSET {pos} LIMIT 1"
 
         result = self._request(query)
 
-        items = result['rows']
+        items = result['items']
         item = items[0] if items is not None and len(items) > 0 else None
 
         if item is None:
