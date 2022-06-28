@@ -116,7 +116,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         self.__schema_statements: List[str] = []
 
         # The dependency resolver.
-        self._dependency_resolver: DependencyResolver = DependencyResolver(PostgresPersistence.__default_config)
+        self._dependency_resolver: DependencyResolver = DependencyResolver(
+            PostgresPersistence.__default_config)
 
         # The logger.
         self._logger: CompositeLogger = CompositeLogger()
@@ -144,10 +145,13 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         self._dependency_resolver.configure(config)
 
-        self._max_page_size = config.get_as_integer_with_default("options.max_page_size", self._max_page_size)
+        self._max_page_size = config.get_as_integer_with_default(
+            "options.max_page_size", self._max_page_size)
 
-        self._table_name = config.get_as_string_with_default('collection', self._table_name)
-        self._table_name = config.get_as_string_with_default('table', self._table_name)
+        self._table_name = config.get_as_string_with_default(
+            'collection', self._table_name)
+        self._table_name = config.get_as_string_with_default(
+            'table', self._table_name)
 
     def set_references(self, references: IReferences):
         """
@@ -160,7 +164,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         # Get connection
         self._dependency_resolver.set_references(references)
-        self._connection = self._dependency_resolver.get_one_optional('connection')
+        self._connection = self._dependency_resolver.get_one_optional(
+            'connection')
         # Or create a local one
         if self._connection is None:
             self._connection = self.__create_connection()
@@ -201,9 +206,11 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         index_name = self._quote_identifier(name)
         if self._schema_name is not None:
-            index_name = self._quote_identifier(self._schema_name) + '.' + index_name
+            index_name = self._quote_identifier(
+                self._schema_name) + '.' + index_name
 
-        builder += " INDEX IF NOT EXISTS " + index_name + " ON " + self._quoted_table_name()
+        builder += " INDEX IF NOT EXISTS " + \
+            index_name + " ON " + self._quoted_table_name()
 
         if options.get('type'):
             builder += " " + options['type']
@@ -298,7 +305,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         builder = self._quote_identifier(self._table_name)
         if self._schema_name is not None:
-            builder += self._quote_identifier(self._schema_name) + '.' + builder
+            builder += self._quote_identifier(self._schema_name) + \
+                '.' + builder
 
         return builder
 
@@ -328,11 +336,13 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
             self._connection.open(correlation_id)
 
         if self._connection is None:
-            raise InvalidStateException(correlation_id, 'NO_CONNECTION', 'PostgreSQL connection is missing')
+            raise InvalidStateException(
+                correlation_id, 'NO_CONNECTION', 'PostgreSQL connection is missing')
 
         if not self._connection.is_open():
             self.__opened = False
-            raise ConnectionException(correlation_id, "CONNECT_FAILED", "PostgreSQL connection is not opened")
+            raise ConnectionException(
+                correlation_id, "CONNECT_FAILED", "PostgreSQL connection is not opened")
 
         self._client = self._connection.get_connection()
 
@@ -350,7 +360,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
                                self._database_name,
                                self._table_name)
         except Exception as err:
-            raise ConnectionException(correlation_id, "CONNECT_FAILED", "Connection to postgres failed").with_cause(err)
+            raise ConnectionException(
+                correlation_id, "CONNECT_FAILED", "Connection to postgres failed").with_cause(err)
 
     def close(self, correlation_id: Optional[str]):
         """
@@ -363,7 +374,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
             return
 
         if self._connection is None:
-            raise InvalidStateException(correlation_id, 'NO_CONNECTION', 'Postgres connection is missing')
+            raise InvalidStateException(
+                correlation_id, 'NO_CONNECTION', 'Postgres connection is missing')
 
         if self.__local_connection:
             self._connection.close(correlation_id)
@@ -406,31 +418,32 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         conn = self._client.getconn()
         cursor = conn.cursor()
-        if params:
-            cursor.execute(query, params)
-        else:
-            cursor.execute(query)
-
         try:
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+
             response = cursor.fetchall()
             column_names = [column.name for column in cursor.description]
             for obj in response:
                 result['items'].append(dict(zip(column_names, obj)))
+             # affected rows
+            result['statusmessage'] = cursor.statusmessage
+            try:
+                result['rowcount'] = int(cursor.statusmessage.split(' ')[-1])
+            except ValueError:
+                result['rowcount'] = cursor.rowcount
+
+            conn.commit()
+            cursor.close()
+            conn.close()
+            self._client.putconn(conn)
+            return result
         except ProgrammingError:
-            pass
-
-        try:
-            result['rowcount'] = int(cursor.statusmessage.split(' ')[-1])
-        except ValueError:
-            result['rowcount'] = cursor.rowcount
-        # affected rows
-        result['statusmessage'] = cursor.statusmessage
-
-        conn.commit()
-        cursor.close()
-        conn.close()
-        self._client.putconn(conn)
-        return result
+            cursor.close()
+            conn.close()
+            self._client.putconn(conn)
 
     def clear(self, correlation_id: Optional[str]):
         """
@@ -456,7 +469,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
             self._client.putconn(conn)
 
         except Exception as err:
-            raise ConnectionException(correlation_id, "CONNECT_FAILED", "Connection to postgres failed").with_cause(err)
+            raise ConnectionException(
+                correlation_id, "CONNECT_FAILED", "Connection to postgres failed").with_cause(err)
 
     def _create_schema(self, correlation_id: Optional[str]):
         """
@@ -485,7 +499,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
             for dlm in self.__schema_statements:
                 self._request(dlm)
         except Exception as err:
-            self._logger.error(correlation_id, err, 'Failed to autocreate database object')
+            self._logger.error(correlation_id, err,
+                               'Failed to autocreate database object')
 
     def _generate_columns(self, values: Any) -> str:
         """
@@ -586,18 +601,21 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         items = result['items']
 
         if items is not None:
-            self._logger.trace(correlation_id, "Retrieved %d from %s", len(items), self._table_name)
+            self._logger.trace(
+                correlation_id, "Retrieved %d from %s", len(items), self._table_name)
 
         items = list(map(self._convert_to_public, items))
 
         if paging_enabled:
-            query = 'SELECT COUNT(*) AS count FROM ' + self._quoted_table_name()
+            query = 'SELECT COUNT(*) AS count FROM ' + \
+                self._quoted_table_name()
             if filter is not None and filter != '':
                 query += " WHERE " + filter
 
             result = self._request(query)
 
-            count = LongConverter.to_long(0 if len(result['items']) == 0 else result['items'][0].get('count', 0))
+            count = LongConverter.to_long(
+                0 if len(result['items']) == 0 else result['items'][0].get('count', 0))
 
             return DataPage(items, count)
         else:
@@ -624,7 +642,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
             result['items']) == 1 else 0
 
         if count is not None:
-            self._logger.trace(correlation_id, "Counted %d items in %s", count, self._table_name)
+            self._logger.trace(
+                correlation_id, "Counted %d items in %s", count, self._table_name)
 
         return count
 
@@ -641,7 +660,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         :param select: (optional) projection JSON object
         :return: data list
         """
-
+        print("fefefefhefie fhefihfeifhf")
         select = select if select and len(select) > 0 else '*'
         query = "SELECT " + select + " FROM " + self._quoted_table_name()
 
@@ -655,7 +674,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         items = result['items']
 
         if items is not None:
-            self._logger.trace(correlation_id, "Retrieved %d from %s", len(items), self._table_name)
+            self._logger.trace(
+                correlation_id, "Retrieved %d from %s", len(items), self._table_name)
 
         items = list(map(self._convert_to_public, items))
 
@@ -682,7 +702,8 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         if filter and filter != '':
             query += " WHERE " + filter
 
-        count = 0 if len(result['items']) == 0 else result['items'][0].get('count', 0)
+        count = 0 if len(
+            result['items']) == 0 else result['items'][0].get('count', 0)
         count = 0 if count == 0 else count - 1
 
         pos = random.randint(0, count)
@@ -694,9 +715,11 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         item = items[0] if items is not None and len(items) > 0 else None
 
         if item is None:
-            self._logger.trace(correlation_id, "Random item wasn't found from %s", self._table_name)
+            self._logger.trace(
+                correlation_id, "Random item wasn't found from %s", self._table_name)
         else:
-            self._logger.trace(correlation_id, "Retrieved random item from %s", self._table_name)
+            self._logger.trace(
+                correlation_id, "Retrieved random item from %s", self._table_name)
 
         item = self._convert_to_public(item)
 
@@ -718,10 +741,12 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
         params = self._generate_parameters(row)
         values = self._generate_values(row)
 
-        query = "INSERT INTO " + self._quoted_table_name() + " (" + columns + ") VALUES (" + params + ") RETURNING *"
+        query = "INSERT INTO " + self._quoted_table_name() + " (" + columns + \
+            ") VALUES (" + params + ") RETURNING *"
 
         result = self._request(query, values)
-        self._logger.trace(correlation_id, "Created in %s with id = %s", self._table_name, row['id'])
+        self._logger.trace(
+            correlation_id, "Created in %s with id = %s", self._table_name, row['id'])
 
         new_item = self._convert_to_public(result['items'][0]) if result['items'] and result['items'][0] and len(
             result['items']) == 1 else None
@@ -747,4 +772,5 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         count = result['rowcount'] if result['rowcount'] else 0
 
-        self._logger.trace(correlation_id, "Deleted %d items from %s", count, self._table_name)
+        self._logger.trace(
+            correlation_id, "Deleted %d items from %s", count, self._table_name)
