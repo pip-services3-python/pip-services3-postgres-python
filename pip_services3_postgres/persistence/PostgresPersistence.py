@@ -406,31 +406,34 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         conn = self._client.getconn()
         cursor = conn.cursor()
-        if params:
-            cursor.execute(query, params)
-        else:
-            cursor.execute(query)
-
         try:
-            response = cursor.fetchall()
-            column_names = [column.name for column in cursor.description]
-            for obj in response:
-                result['items'].append(dict(zip(column_names, obj)))
-        except ProgrammingError:
-            pass
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
 
-        try:
-            result['rowcount'] = int(cursor.statusmessage.split(' ')[-1])
-        except ValueError:
-            result['rowcount'] = cursor.rowcount
-        # affected rows
-        result['statusmessage'] = cursor.statusmessage
+            try:
+                response = cursor.fetchall()
+                column_names = [column.name for column in cursor.description]
+                for obj in response:
+                    result['items'].append(dict(zip(column_names, obj)))
+            except ProgrammingError:
+                pass
 
-        conn.commit()
-        cursor.close()
-        conn.close()
-        self._client.putconn(conn)
-        return result
+            try:
+                result['rowcount'] = int(cursor.statusmessage.split(' ')[-1])
+            except ValueError:
+                result['rowcount'] = cursor.rowcount
+            # affected rows
+            result['statusmessage'] = cursor.statusmessage
+
+            conn.commit()
+            cursor.close()
+            return result
+
+        finally:
+            conn.close()
+            self._client.putconn(conn)
 
     def clear(self, correlation_id: Optional[str]):
         """

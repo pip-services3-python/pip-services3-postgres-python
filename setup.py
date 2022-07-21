@@ -23,7 +23,7 @@ from setuptools import setup
 
 setup(
     name='pip_services3_postgres',
-    version='3.2.5',
+    version='3.2.6',
     url='http://github.com/pip-services3-python/pip-services3-postgres-python',
     license='MIT',
     author='Conceptual Vision Consulting LLC',
@@ -36,8 +36,8 @@ setup(
     zip_safe=True,
     platforms='any',
     install_requires=[
+        'psycopg2-binary >= 2.9.3, < 3.0',
 
-        'psycopg2-binary',
         'pip-services3-commons >= 3.3.9, < 4.0',
         'pip-services3-components >= 3.5.0, < 4.0',
         'pip_services3_data >= 3.2.3, < 4.0'
@@ -48,8 +48,10 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ]
 )
