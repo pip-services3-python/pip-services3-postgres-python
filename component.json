@@ -1,6 +1,14 @@
 {
-    "name": "pip_services3_postgres",
-    "registry": "pipdevs",
+    "name":  "pip_services3_prometheus",
+    "type": "module",
+    "language": "python",
     "version": "3.2.6",
-    "build": 0
+    "build": 0,
+    "registry": "pipdevs",
+    "artifacts": [
+        {
+            "name":  "<name>",
+            "type": "pypi"
+        }
+    ]
 }
