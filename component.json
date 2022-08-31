@@ -1,5 +1,5 @@
 {
-    "name":  "pip_services3_postgres",
+    "name":  "pip-services3-postgres",
     "type": "module",
     "language": "python",
     "version": "3.2.6",
