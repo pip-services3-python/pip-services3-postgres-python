@@ -23,7 +23,7 @@ from setuptools import setup
 
 setup(
     name='pip_services3_postgres',
-    version='3.2.6',
+    version='3.2.7',
     url='http://github.com/pip-services3-python/pip-services3-postgres-python',
     license='MIT',
     author='Conceptual Vision Consulting LLC',

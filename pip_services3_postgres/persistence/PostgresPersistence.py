@@ -298,7 +298,7 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         builder = self._quote_identifier(self._table_name)
         if self._schema_name is not None:
-            builder += self._quote_identifier(self._schema_name) + '.' + builder
+            builder = self._quote_identifier(self._schema_name) + '.' + builder
 
         return builder
 

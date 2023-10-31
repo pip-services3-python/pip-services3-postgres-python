@@ -1,5 +1,10 @@
 # <img src="https://uploads-ssl.webflow.com/5ea5d3315186cf5ec60c3ee4/5edf1c94ce4c859f2b188094_logo.svg" alt="Pip.Services Logo" width="200"> <br/> PostgreSQL components for Python Changelog
 
+## <a name="3.2.7"></a> 3.2.7 (2023-10-31)
+
+### Bug fixed
+* Fixed bug with `_quote_identifier` schema builder
+
 ## <a name="3.2.6"></a> 3.2.6 (2022-07-21)
 
 ### Bug fixed
