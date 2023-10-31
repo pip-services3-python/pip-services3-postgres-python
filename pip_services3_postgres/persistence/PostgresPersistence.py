@@ -404,36 +404,31 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
                   'statusmessage': None
                   }
 
-        conn = self._client.getconn()
-        cursor = conn.cursor()
-        try:
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
+        with self._client.getconn() as conn:
+            with conn.cursor() as cursor:
+                if params:
+                    cursor.execute(query, params)
+                else:
+                    cursor.execute(query)
 
-            try:
-                response = cursor.fetchall()
-                column_names = [column.name for column in cursor.description]
-                for obj in response:
-                    result['items'].append(dict(zip(column_names, obj)))
-            except ProgrammingError:
-                pass
+                try:
+                    response = cursor.fetchall()
+                    column_names = [column.name for column in cursor.description]
+                    for obj in response:
+                        result['items'].append(dict(zip(column_names, obj)))
+                except ProgrammingError:
+                    pass
 
-            try:
-                result['rowcount'] = int(cursor.statusmessage.split(' ')[-1])
-            except ValueError:
-                result['rowcount'] = cursor.rowcount
-            # affected rows
-            result['statusmessage'] = cursor.statusmessage
+                try:
+                    result['rowcount'] = int(cursor.statusmessage.split(' ')[-1])
+                except ValueError:
+                    result['rowcount'] = cursor.rowcount
+                # affected rows
+                result['statusmessage'] = cursor.statusmessage
 
-            conn.commit()
-            cursor.close()
-            return result
-
-        finally:
-            conn.close()
-            self._client.putconn(conn)
+                conn.commit()
+                cursor.close()
+                return result
 
     def clear(self, correlation_id: Optional[str]):
         """
@@ -451,12 +446,12 @@ class PostgresPersistence(IReferenceable, IUnreferenceable, IConfigurable, IOpen
 
         try:
             # self._request(query)
-            conn = self._client.getconn()
-            cursor = conn.cursor()
-            cursor.execute(query)
-            conn.commit()
-            cursor.close()
-            self._client.putconn(conn)
+            with self._client.getconn() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query)
+                    conn.commit()
+                    cursor.close()
+                    self._client.putconn(conn)
 
         except Exception as err:
             raise ConnectionException(correlation_id, "CONNECT_FAILED", "Connection to postgres failed").with_cause(err)

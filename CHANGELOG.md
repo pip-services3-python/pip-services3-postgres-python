@@ -4,6 +4,7 @@
 
 ### Bug fixed
 * Fixed bug with `_quote_identifier` schema builder
+* Improved queries to DB and ctx close 
 
 ## <a name="3.2.6"></a> 3.2.6 (2022-07-21)
 
